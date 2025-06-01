@@ -511,7 +511,7 @@ export default function TodoCalendarApp() {
       {showAddForm && <AddEventForm onSubmit={addTodo} onCancel={() => setShowAddForm(false)} />}
 
       {showFilter && (
-        <Card className="p-4">
+        <div className="p-4">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Input
@@ -521,12 +521,12 @@ export default function TodoCalendarApp() {
               className="flex-1 font-mono"
             />
           </div>
-        </Card>
+        </div>
       )}
 
       <div className="space-y-2">
         {getFilteredTodos(getTodosForDate(selectedDate)).map((todo) => (
-          <div key={todo.id} className="flex items-center gap-3 py-2 hover:bg-accent/50 transition-colors rounded">
+          <div key={todo.id} className="flex items-center gap-3 py-2">
             <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
             <span
               className={cn("flex-1 text-base font-medium", todo.completed && "line-through text-muted-foreground")}
@@ -595,12 +595,9 @@ export default function TodoCalendarApp() {
           const isToday = date === new Date().toISOString().split("T")[0]
 
           return (
-            <Card
+            <div
               key={date}
-              className={cn(
-                "p-4 cursor-pointer hover:bg-accent/50 transition-colors",
-                isToday && "ring-2 ring-primary",
-              )}
+              className={cn("p-4 cursor-pointer transition-colors", isToday && "ring-2 ring-primary")}
               onClick={() => navigateToDate(date)}
             >
               <div className="text-sm font-medium mb-3 font-mono">{formatDate(date)}</div>
@@ -617,7 +614,7 @@ export default function TodoCalendarApp() {
                   <div className="text-xs text-muted-foreground font-mono">+{dayTodos.length - 3} more</div>
                 )}
               </div>
-            </Card>
+            </div>
           )
         })}
       </div>
@@ -664,12 +661,9 @@ export default function TodoCalendarApp() {
           const isToday = date === new Date().toISOString().split("T")[0]
 
           return (
-            <Card
+            <div
               key={date}
-              className={cn(
-                "p-2 min-h-[80px] cursor-pointer hover:bg-accent/50 transition-colors",
-                isToday && "ring-2 ring-primary",
-              )}
+              className={cn("p-2 min-h-[80px] cursor-pointer transition-colors", isToday && "ring-2 ring-primary")}
               onClick={() => navigateToDate(date)}
             >
               <div className="text-sm font-medium mb-1 font-mono">{day}</div>
@@ -684,7 +678,7 @@ export default function TodoCalendarApp() {
                   <div className="text-xs text-muted-foreground font-mono">+{dayTodos.length - 2}</div>
                 )}
               </div>
-            </Card>
+            </div>
           )
         })}
       </div>
@@ -727,9 +721,9 @@ export default function TodoCalendarApp() {
           })
 
           return (
-            <Card
+            <div
               key={monthIndex}
-              className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+              className="p-4 cursor-pointer transition-colors"
               onClick={() => {
                 // Create date string directly to avoid timezone issues
                 const dateString = `${currentYear}-${String(monthIndex + 1).padStart(2, "0")}-01`
@@ -752,7 +746,7 @@ export default function TodoCalendarApp() {
                   />
                 </div>
               </div>
-            </Card>
+            </div>
           )
         })}
       </div>
@@ -822,7 +816,7 @@ export default function TodoCalendarApp() {
           {displayTodos.map((todo) => (
             <div key={todo.id} className="space-y-1">
               <div
-                className="flex items-center gap-2 cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
+                className="flex items-center gap-2 cursor-pointer p-2 transition-colors"
                 onClick={() => navigateToDate(todo.date)}
               >
                 <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} className="h-4 w-4" />
@@ -866,7 +860,7 @@ export default function TodoCalendarApp() {
           {showAddForm && <AddEventForm onSubmit={addTodo} onCancel={() => setShowAddForm(false)} />}
 
           {showFilter && (
-            <Card className="p-4">
+            <div className="p-4">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
                 <Input
@@ -876,7 +870,7 @@ export default function TodoCalendarApp() {
                   className="flex-1 font-mono"
                 />
               </div>
-            </Card>
+            </div>
           )}
         </div>
 
@@ -944,17 +938,15 @@ export default function TodoCalendarApp() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
+              <div
                 onClick={() => {
                   setSelectedDate(new Date().toISOString().split("T")[0])
                   setCurrentView("Days")
                 }}
-                className="hover:bg-accent/50 transition-colors"
+                className="cursor-pointer hover:bg-accent/50 transition-colors p-2 rounded-md"
               >
-                <Calendar className="h-10 w-10" />
-              </Button>
+                <Calendar className="h-7 w-7" />
+              </div>
             </div>
 
             <div className="overflow-x-auto scrollbar-hide" ref={navRef}>
