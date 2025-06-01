@@ -528,7 +528,9 @@ export default function TodoCalendarApp() {
         {getFilteredTodos(getTodosForDate(selectedDate)).map((todo) => (
           <div key={todo.id} className="flex items-center gap-3 py-2 hover:bg-accent/50 transition-colors rounded">
             <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
-            <span className={cn("flex-1 text-sm", todo.completed && "line-through text-muted-foreground")}>
+            <span
+              className={cn("flex-1 text-base font-medium", todo.completed && "line-through text-muted-foreground")}
+            >
               {todo.text}
             </span>
             {todo.tags.length > 0 && (
@@ -824,7 +826,7 @@ export default function TodoCalendarApp() {
                 onClick={() => navigateToDate(todo.date)}
               >
                 <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} className="h-4 w-4" />
-                <span className={cn("font-medium text-sm", todo.completed && "line-through text-muted-foreground")}>
+                <span className={cn("text-base font-medium", todo.completed && "line-through text-muted-foreground")}>
                   {todo.text}
                 </span>
                 {todo.tags.length > 0 && (
@@ -942,7 +944,17 @@ export default function TodoCalendarApp() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Calendar className="h-6 w-6" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setSelectedDate(new Date().toISOString().split("T")[0])
+                  setCurrentView("Days")
+                }}
+                className="hover:bg-accent/50 transition-colors"
+              >
+                <Calendar className="h-10 w-10" />
+              </Button>
             </div>
 
             <div className="overflow-x-auto scrollbar-hide" ref={navRef}>
