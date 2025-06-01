@@ -185,6 +185,35 @@ const parseICS = (icsContent: string): Partial<Todo>[] => {
   return events
 }
 
+// Local storage helpers
+const STORAGE_KEY = "dwmyo-todos"
+
+const loadTodosFromStorage = (): Todo[] => {
+  if (typeof window === "undefined") return mockTodos
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return Array.isArray(parsed) ? parsed : mockTodos
+    }
+  } catch (error) {
+    console.error("Error loading todos from localStorage:", error)
+  }
+
+  return mockTodos
+}
+
+const saveTodosToStorage = (todos: Todo[]) => {
+  if (typeof window === "undefined") return
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos))
+  } catch (error) {
+    console.error("Error saving todos to localStorage:", error)
+  }
+}
+
 // Separate component for the add form to prevent focus issues
 function AddEventForm({
   onSubmit,
@@ -259,7 +288,7 @@ function AddEventForm({
 
 export default function TodoCalendarApp() {
   const [currentView, setCurrentView] = useState<ViewType>("Days")
-  const [todos, setTodos] = useState<Todo[]>(mockTodos)
+  const [todos, setTodos] = useState<Todo[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
   const [tagFilter, setTagFilter] = useState("")
   const [showMore365, setShowMore365] = useState(false)
@@ -268,6 +297,18 @@ export default function TodoCalendarApp() {
   const navRef = useRef<HTMLDivElement>(null)
 
   const views: ViewType[] = ["Days", "Week", "Month", "Year", "Overview"]
+
+  // Load todos from localStorage on mount
+  useEffect(() => {
+    setTodos(loadTodosFromStorage())
+  }, [])
+
+  // Save todos to localStorage whenever todos change
+  useEffect(() => {
+    if (todos.length > 0) {
+      saveTodosToStorage(todos)
+    }
+  }, [todos])
 
   // Handle URL parameters for PWA shortcuts
   useEffect(() => {
@@ -604,7 +645,12 @@ export default function TodoCalendarApp() {
               <div className="space-y-2">
                 {dayTodos.slice(0, 3).map((todo) => (
                   <div key={todo.id} className="flex items-center gap-2">
-                    <div className={cn("w-2 h-2 rounded-full", todo.completed ? "bg-green-500" : "bg-blue-500")} />
+                    <div
+                      className={cn(
+                        "w-2 h-2 rounded-full",
+                        todo.completed ? "bg-[hsl(var(--ds-red-700))]" : "bg-[hsl(var(--ds-red-700))]",
+                      )}
+                    />
                     <span className={cn("text-xs truncate", todo.completed && "line-through text-muted-foreground")}>
                       {todo.text}
                     </span>
@@ -671,7 +717,10 @@ export default function TodoCalendarApp() {
                 {dayTodos.slice(0, 2).map((todo) => (
                   <div
                     key={todo.id}
-                    className={cn("w-full h-1 rounded-full", todo.completed ? "bg-green-500" : "bg-blue-500")}
+                    className={cn(
+                      "w-full h-1 rounded-full",
+                      todo.completed ? "bg-[hsl(var(--ds-red-700))]" : "bg-[hsl(var(--ds-red-700))]",
+                    )}
                   />
                 ))}
                 {dayTodos.length > 2 && (
@@ -739,7 +788,7 @@ export default function TodoCalendarApp() {
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2">
                   <div
-                    className="bg-primary h-2 rounded-full transition-all"
+                    className="bg-[hsl(var(--ds-red-700))] h-2 rounded-full transition-all"
                     style={{
                       width: `${monthTodos.length ? (monthTodos.filter((t) => t.completed).length / monthTodos.length) * 100 : 0}%`,
                     }}
@@ -786,13 +835,6 @@ export default function TodoCalendarApp() {
 
     const formatEventDate = (dateString: string) => {
       const date = new Date(dateString)
-      const today = new Date()
-      const diffTime = date.getTime() - today.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-      if (diffDays === 1) return "Tomorrow"
-      if (diffDays <= 7) return `In ${diffDays} days`
-
       return date.toLocaleDateString("en-US", {
         day: "numeric",
         month: "long",
@@ -804,7 +846,8 @@ export default function TodoCalendarApp() {
       todos,
       showAll = false,
       onShowMore,
-    }: { todos: Todo[]; showAll?: boolean; onShowMore?: () => void }) => {
+      showDates = true,
+    }: { todos: Todo[]; showAll?: boolean; onShowMore?: () => void; showDates?: boolean }) => {
       const displayTodos = showAll ? todos : todos.slice(0, 5)
 
       if (todos.length === 0) {
@@ -833,7 +876,9 @@ export default function TodoCalendarApp() {
                   </div>
                 )}
               </div>
-              <div className="text-xs text-muted-foreground ml-8 font-mono">{formatEventDate(todo.date)}</div>
+              {showDates && (
+                <div className="text-xs text-muted-foreground ml-8 font-mono">{formatEventDate(todo.date)}</div>
+              )}
             </div>
           ))}
 
@@ -881,7 +926,7 @@ export default function TodoCalendarApp() {
               <h3 className="text-lg font-medium text-foreground">Today</h3>
               <span className="text-2xl font-light text-primary font-mono">{todayTodos.length}</span>
             </div>
-            <EventList todos={todayTodos} showAll />
+            <EventList todos={todayTodos} showAll showDates={false} />
           </div>
 
           {/* Next 7 Days */}
