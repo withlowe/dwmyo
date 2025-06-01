@@ -524,19 +524,14 @@ export default function TodoCalendarApp() {
         </Card>
       )}
 
-      <Card className="p-6">
-        <div className="space-y-3">
-          {getFilteredTodos(getTodosForDate(selectedDate)).map((todo) => (
-            <div
-              key={todo.id}
-              className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-            >
-              <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
-              <span
-                className={cn("flex-1 text-sm font-medium", todo.completed && "line-through text-muted-foreground")}
-              >
-                {todo.text}
-              </span>
+      <div className="space-y-2">
+        {getFilteredTodos(getTodosForDate(selectedDate)).map((todo) => (
+          <div key={todo.id} className="flex items-center gap-3 py-2 hover:bg-accent/50 transition-colors rounded">
+            <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
+            <span className={cn("flex-1 text-sm", todo.completed && "line-through text-muted-foreground")}>
+              {todo.text}
+            </span>
+            {todo.tags.length > 0 && (
               <div className="flex gap-1">
                 {todo.tags.map((tag) => (
                   <Badge key={tag} variant="outline" className="text-xs font-mono">
@@ -544,28 +539,25 @@ export default function TodoCalendarApp() {
                   </Badge>
                 ))}
               </div>
-              <Badge variant="secondary" className="text-xs font-mono">
-                {todo.category}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => deleteTodo(todo.id)}
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => deleteTodo(todo.id)}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
 
-          {getFilteredTodos(getTodosForDate(selectedDate)).length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">No tasks for this day</p>
-            </div>
-          )}
-        </div>
-      </Card>
+        {getFilteredTodos(getTodosForDate(selectedDate)).length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <p className="text-sm">No tasks for this day</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 
