@@ -500,16 +500,8 @@ export default function TodoCalendarApp() {
 
   const renderDaysView = () => (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4 flex-1">
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-auto font-mono"
-          />
-          <div className="text-2xl font-light text-muted-foreground font-mono">{formatDate(selectedDate)}</div>
-        </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h2 className="text-2xl font-light font-mono">{formatDate(selectedDate)}</h2>
         <div className="flex gap-2 w-full sm:w-auto">
           <FilterButton />
           <AddButton />
@@ -869,46 +861,36 @@ export default function TodoCalendarApp() {
     return (
       <div className="space-y-8">
         <div className="space-y-4">
-          <h1 className="text-3xl font-semibold text-foreground">Upcoming Events</h1>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Filter by tags or text..."
-                value={tagFilter}
-                onChange={(e) => setTagFilter(e.target.value)}
-                className="flex-1 sm:w-64 font-mono"
-              />
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 sm:flex-none">
-                <Download className="h-4 w-4 mr-2" />
-                Export .ics
-              </Button>
-              <div className="relative flex-1 sm:flex-none">
-                <input
-                  type="file"
-                  accept=".ics"
-                  onChange={handleImport}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  id="ics-import"
-                />
-                <Button variant="outline" size="sm" asChild className="w-full">
-                  <label htmlFor="ics-import" className="cursor-pointer flex items-center justify-center">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import .ics
-                  </label>
-                </Button>
-              </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h2 className="text-2xl font-light font-mono">Overview</h2>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <FilterButton />
+              <AddButton />
             </div>
           </div>
+
+          {showAddForm && <AddEventForm onSubmit={addTodo} onCancel={() => setShowAddForm(false)} />}
+
+          {showFilter && (
+            <Card className="p-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Filter by tags or text..."
+                  value={tagFilter}
+                  onChange={(e) => setTagFilter(e.target.value)}
+                  className="flex-1 font-mono"
+                />
+              </div>
+            </Card>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Today */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-medium text-foreground">Today</h2>
+              <h3 className="text-lg font-medium text-foreground">Today</h3>
               <span className="text-2xl font-light text-primary font-mono">{todayTodos.length}</span>
             </div>
             <EventList todos={todayTodos} showAll />
@@ -917,7 +899,7 @@ export default function TodoCalendarApp() {
           {/* Next 7 Days */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-medium text-foreground">Next 7 Days</h2>
+              <h3 className="text-lg font-medium text-foreground">Next 7 Days</h3>
               <span className="text-2xl font-light text-primary font-mono">{next7DaysTodos.length}</span>
             </div>
             <EventList todos={next7DaysTodos} showAll />
@@ -926,7 +908,7 @@ export default function TodoCalendarApp() {
           {/* Next 28 Days */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-medium text-foreground">Next 28 Days</h2>
+              <h3 className="text-lg font-medium text-foreground">Next 28 Days</h3>
               <span className="text-2xl font-light text-primary font-mono">{next28DaysTodos.length}</span>
             </div>
             <EventList todos={next28DaysTodos} showAll />
@@ -935,7 +917,7 @@ export default function TodoCalendarApp() {
           {/* Next 365 Days */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-medium text-foreground">Next 365 Days</h2>
+              <h3 className="text-lg font-medium text-foreground">Next 365 Days</h3>
               <span className="text-2xl font-light text-primary font-mono">{next365DaysTodos.length}</span>
             </div>
             <EventList todos={next365DaysTodos} showAll={showMore365} onShowMore={() => setShowMore365(true)} />
@@ -992,6 +974,33 @@ export default function TodoCalendarApp() {
       </div>
 
       <main className="container mx-auto px-6 py-8">{renderCurrentView()}</main>
+
+      {/* Import/Export buttons at bottom */}
+      <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Export .ics
+            </Button>
+            <div className="relative">
+              <input
+                type="file"
+                accept=".ics"
+                onChange={handleImport}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="ics-import"
+              />
+              <Button variant="outline" size="sm" asChild>
+                <label htmlFor="ics-import" className="cursor-pointer flex items-center justify-center">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import .ics
+                </label>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <PWAInstall />
     </div>
