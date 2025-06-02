@@ -19,9 +19,10 @@ type Todo = {
   date: string
   category: string
   tags: string[]
+  pinned: boolean
 }
 
-type ViewType = "Days" | "Week" | "Month" | "Year" | "Overview"
+type ViewType = "Overview" | "Calendar"
 
 const mockTodos: Todo[] = [
   {
@@ -31,6 +32,7 @@ const mockTodos: Todo[] = [
     date: "2024-01-15",
     category: "work",
     tags: ["meeting", "team"],
+    pinned: false,
   },
   {
     id: "2",
@@ -39,6 +41,7 @@ const mockTodos: Todo[] = [
     date: "2024-01-15",
     category: "work",
     tags: ["review", "project"],
+    pinned: false,
   },
   {
     id: "3",
@@ -47,6 +50,7 @@ const mockTodos: Todo[] = [
     date: "2024-01-16",
     category: "personal",
     tags: ["shopping", "errands"],
+    pinned: false,
   },
   {
     id: "4",
@@ -55,8 +59,17 @@ const mockTodos: Todo[] = [
     date: "2024-01-16",
     category: "health",
     tags: ["fitness", "routine"],
+    pinned: false,
   },
-  { id: "5", text: "Call mom", completed: true, date: "2024-01-14", category: "personal", tags: ["family", "call"] },
+  {
+    id: "5",
+    text: "Call mom",
+    completed: true,
+    date: "2024-01-14",
+    category: "personal",
+    tags: ["family", "call"],
+    pinned: false,
+  },
 ]
 
 // Helper functions for .ics import/export
@@ -133,6 +146,7 @@ const parseICS = (icsContent: string): Partial<Todo>[] => {
         completed: false,
         category: "personal",
         tags: [],
+        pinned: false,
       }
     } else if (trimmedLine === "END:VEVENT" && currentEvent) {
       if (currentEvent.text && currentEvent.date) {
@@ -218,13 +232,17 @@ const saveTodosToStorage = (todos: Todo[]) => {
 function AddEventForm({
   onSubmit,
   onCancel,
+  selectedDate,
+  setSelectedDate,
 }: {
-  onSubmit: (text: string, tags: string[], addToAllPages: boolean) => void
+  onSubmit: (text: string, tags: string[], pinTask: boolean, date: string) => void
   onCancel: () => void
+  selectedDate: string
+  setSelectedDate: (date: string) => void
 }) {
   const [text, setText] = useState("")
   const [tags, setTags] = useState("")
-  const [addToAllPages, setAddToAllPages] = useState(false)
+  const [pinTask, setPinTask] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -233,10 +251,10 @@ function AddEventForm({
         .split(",")
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0)
-      onSubmit(text, tagList, addToAllPages)
+      onSubmit(text, tagList, pinTask, selectedDate)
       setText("")
       setTags("")
-      setAddToAllPages(false)
+      setPinTask(false)
     }
   }
 
@@ -258,6 +276,7 @@ function AddEventForm({
             className="flex-1"
             autoFocus
           />
+          <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-40" />
           <Button type="submit" size="sm">
             <Plus className="h-4 w-4" />
           </Button>
@@ -271,13 +290,9 @@ function AddEventForm({
             className="flex-1"
           />
           <div className="flex items-center gap-2">
-            <Checkbox
-              id="add-to-all"
-              checked={addToAllPages}
-              onCheckedChange={(checked) => setAddToAllPages(!!checked)}
-            />
-            <label htmlFor="add-to-all" className="text-sm text-muted-foreground cursor-pointer">
-              Add to all days
+            <Checkbox id="pin-task" checked={pinTask} onCheckedChange={(checked) => setPinTask(!!checked)} />
+            <label htmlFor="pin-task" className="text-sm text-muted-foreground cursor-pointer">
+              Pin
             </label>
           </div>
         </div>
@@ -287,7 +302,7 @@ function AddEventForm({
 }
 
 export default function TodoCalendarApp() {
-  const [currentView, setCurrentView] = useState<ViewType>("Days")
+  const [currentView, setCurrentView] = useState<ViewType>("Overview")
   const [todos, setTodos] = useState<Todo[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
   const [tagFilter, setTagFilter] = useState("")
@@ -295,8 +310,10 @@ export default function TodoCalendarApp() {
   const [showFilter, setShowFilter] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
+  const [viewYear, setViewYear] = useState(new Date().getFullYear())
+  const [viewMonth, setViewMonth] = useState(new Date().getMonth())
 
-  const views: ViewType[] = ["Days", "Week", "Month", "Year", "Overview"]
+  const views: ViewType[] = ["Overview", "Calendar"]
 
   // Load todos from localStorage on mount
   useEffect(() => {
@@ -355,48 +372,29 @@ export default function TodoCalendarApp() {
     return () => document.removeEventListener("touchend", preventZoom)
   }, [])
 
-  const addTodo = (text: string, tags: string[], addToAllPages: boolean) => {
+  const addTodo = (text: string, tags: string[], pinTask: boolean, date: string) => {
     if (text.trim()) {
-      if (addToAllPages) {
-        // Add to multiple dates based on current view
-        const datesToAdd = getCurrentViewDates()
-        const newTodos = datesToAdd.map((date) => ({
-          id: `${Date.now()}-${date}`,
-          text: text,
-          completed: false,
-          date: date,
-          category: "personal",
-          tags: tags,
-        }))
-        setTodos([...todos, ...newTodos])
-      } else {
-        const todo: Todo = {
-          id: Date.now().toString(),
-          text: text,
-          completed: false,
-          date: selectedDate,
-          category: "personal",
-          tags: tags,
-        }
-        setTodos([...todos, todo])
+      const todo: Todo = {
+        id: Date.now().toString(),
+        text: text,
+        completed: false,
+        date: date,
+        category: "personal",
+        tags: tags,
+        pinned: pinTask,
       }
+      setTodos([...todos, todo])
       setShowAddForm(false)
     }
   }
 
   const navigateToDate = (date: string) => {
     setSelectedDate(date)
-    setCurrentView("Days")
+    setCurrentView("Calendar")
   }
 
   const getCurrentViewDates = () => {
     switch (currentView) {
-      case "Week":
-        return getCurrentWeekDates()
-      case "Month":
-        return getCurrentMonthDates()
-      case "Days":
-        return [selectedDate]
       default:
         return [selectedDate]
     }
@@ -422,6 +420,68 @@ export default function TodoCalendarApp() {
 
   const deleteTodo = (id: string) => {
     setTodos(todos.filter((todo) => todo.id !== id))
+  }
+
+  const moveUncompletedToNextDay = (fromDate: string) => {
+    const nextDay = new Date(fromDate)
+    nextDay.setDate(nextDay.getDate() + 1)
+    const nextDayString = nextDay.toISOString().split("T")[0]
+
+    const uncompletedTodos = todos.filter((todo) => todo.date === fromDate && !todo.completed)
+
+    if (uncompletedTodos.length === 0) return
+
+    const updatedTodos = todos.map((todo) => {
+      if (todo.date === fromDate && !todo.completed) {
+        return { ...todo, date: nextDayString }
+      }
+      return todo
+    })
+
+    setTodos(updatedTodos)
+  }
+
+  const autoMoveUncompletedTasks = () => {
+    const today = new Date().toISOString().split("T")[0]
+    const lastCheckKey = "dwmyo-last-auto-move-check"
+    const lastCheck = localStorage.getItem(lastCheckKey)
+
+    // Only run once per day
+    if (lastCheck === today) return
+
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayString = yesterday.toISOString().split("T")[0]
+
+    // Find all uncompleted tasks from previous days (not today)
+    const uncompletedFromPast = todos.filter((todo) => {
+      const todoDate = new Date(todo.date)
+      const todayDate = new Date(today)
+      return !todo.completed && todoDate < todayDate
+    })
+
+    if (uncompletedFromPast.length > 0) {
+      // Move all uncompleted tasks from past days to today
+      const updatedTodos = todos.map((todo) => {
+        const todoDate = new Date(todo.date)
+        const todayDate = new Date(today)
+        if (!todo.completed && todoDate < todayDate) {
+          return { ...todo, date: today }
+        }
+        return todo
+      })
+
+      setTodos(updatedTodos)
+
+      // Store that we've done the check for today
+      localStorage.setItem(lastCheckKey, today)
+
+      // Optional: Show notification (you could add a toast here)
+      console.log(`Auto-moved ${uncompletedFromPast.length} uncompleted tasks to today`)
+    } else {
+      // Still mark that we've checked today even if no moves were needed
+      localStorage.setItem(lastCheckKey, today)
+    }
   }
 
   const getTodosForDate = (date: string) => {
@@ -522,6 +582,7 @@ export default function TodoCalendarApp() {
             ...event,
             category: event.category || "personal",
             tags: event.tags || [],
+            pinned: false,
           }))
 
         setTodos((prevTodos) => [...prevTodos, ...newTodos])
@@ -539,268 +600,241 @@ export default function TodoCalendarApp() {
     reader.readAsText(file)
   }
 
-  const renderDaysView = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-light font-mono">{formatDate(selectedDate)}</h2>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <FilterButton />
-          <AddButton />
-        </div>
-      </div>
+  const renderCalendarView = () => {
+    const today = new Date()
+    const currentYear = today.getFullYear()
+    const currentMonth = today.getMonth()
 
-      {showAddForm && <AddEventForm onSubmit={addTodo} onCancel={() => setShowAddForm(false)} />}
+    const firstDayOfMonth = new Date(viewYear, viewMonth, 1)
+    const lastDayOfMonth = new Date(viewYear, viewMonth + 1, 0)
+    const firstDayOfWeek = firstDayOfMonth.getDay()
 
-      {showFilter && (
-        <div className="p-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Filter by tags or text..."
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              className="flex-1 font-mono"
-            />
+    const daysInMonth = lastDayOfMonth.getDate()
+    const daysFromPrevMonth = firstDayOfWeek
+    const totalCells = Math.ceil((daysInMonth + daysFromPrevMonth) / 7) * 7
+
+    const calendarDays = []
+
+    // Previous month days
+    const prevMonth = new Date(viewYear, viewMonth - 1, 0)
+    for (let i = daysFromPrevMonth - 1; i >= 0; i--) {
+      const day = prevMonth.getDate() - i
+      const year = viewMonth === 0 ? viewYear - 1 : viewYear
+      const month = viewMonth === 0 ? 11 : viewMonth - 1
+      const dateString = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+      calendarDays.push({
+        date: dateString,
+        day,
+        isCurrentMonth: false,
+        isToday: false,
+      })
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateString = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+      const isToday = dateString === today.toISOString().split("T")[0]
+      calendarDays.push({
+        date: dateString,
+        day,
+        isCurrentMonth: true,
+        isToday,
+      })
+    }
+
+    // Next month days
+    const remainingCells = totalCells - calendarDays.length
+    for (let day = 1; day <= remainingCells; day++) {
+      const year = viewMonth === 11 ? viewYear + 1 : viewYear
+      const month = viewMonth === 11 ? 0 : viewMonth + 1
+      const dateString = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+      calendarDays.push({
+        date: dateString,
+        day,
+        isCurrentMonth: false,
+        isToday: false,
+      })
+    }
+
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ]
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-light font-mono">
+              {monthNames[viewMonth]} {viewYear}
+            </h2>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (viewMonth === 0) {
+                    setViewMonth(11)
+                    setViewYear(viewYear - 1)
+                  } else {
+                    setViewMonth(viewMonth - 1)
+                  }
+                }}
+              >
+                ←
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (viewMonth === 11) {
+                    setViewMonth(0)
+                    setViewYear(viewYear + 1)
+                  } else {
+                    setViewMonth(viewMonth + 1)
+                  }
+                }}
+              >
+                →
+              </Button>
+            </div>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <FilterButton />
+            <AddButton />
           </div>
         </div>
-      )}
 
-      <div className="space-y-2">
-        {getFilteredTodos(getTodosForDate(selectedDate)).map((todo) => (
-          <div key={todo.id} className="flex items-center gap-3 py-2">
-            <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
-            <span
-              className={cn("flex-1 text-base font-medium", todo.completed && "line-through text-muted-foreground")}
-            >
-              {todo.text}
-            </span>
-            {todo.tags.length > 0 && (
-              <div className="flex gap-1">
-                {todo.tags.map((tag) => (
-                  <Badge key={tag} variant="outline" className="text-xs font-mono">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => deleteTodo(todo.id)}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-
-        {getFilteredTodos(getTodosForDate(selectedDate)).length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No tasks for this day</p>
-          </div>
+        {showAddForm && (
+          <AddEventForm
+            onSubmit={addTodo}
+            onCancel={() => setShowAddForm(false)}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+          />
         )}
-      </div>
-    </div>
-  )
 
-  const renderWeekView = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-light">This Week</h2>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <FilterButton />
-          <AddButton />
-        </div>
-      </div>
+        {showFilter && (
+          <Card className="p-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filter by tags or text..."
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                className="flex-1 font-mono"
+              />
+            </div>
+          </Card>
+        )}
 
-      {showAddForm && <AddEventForm onSubmit={addTodo} onCancel={() => setShowAddForm(false)} />}
+        <div className="grid grid-cols-7 gap-2">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground font-mono">
+              {day}
+            </div>
+          ))}
+          {calendarDays.map((calendarDay, index) => {
+            const dayTodos = getTodosForDate(calendarDay.date)
 
-      {showFilter && (
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Filter by tags or text..."
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              className="flex-1 font-mono"
-            />
-          </div>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-        {getCurrentWeekDates().map((date) => {
-          const dayTodos = getTodosForDate(date)
-          const isToday = date === new Date().toISOString().split("T")[0]
-
-          return (
-            <div
-              key={date}
-              className={cn("p-4 cursor-pointer transition-colors", isToday && "ring-2 ring-primary")}
-              onClick={() => navigateToDate(date)}
-            >
-              <div className="text-sm font-medium mb-3 font-mono">{formatDate(date)}</div>
-              <div className="space-y-2">
-                {dayTodos.slice(0, 3).map((todo) => (
-                  <div key={todo.id} className="flex items-center gap-2">
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "p-2 min-h-[80px] cursor-pointer transition-all duration-200 border rounded-md",
+                  calendarDay.isCurrentMonth ? "bg-background" : "bg-muted/30",
+                  calendarDay.isToday && "ring-2 ring-primary",
+                  calendarDay.date === selectedDate && "bg-accent/50 ring-2 ring-accent shadow-md",
+                  "hover:bg-accent/30",
+                )}
+                onClick={() => {
+                  setSelectedDate(calendarDay.date)
+                  // Scroll to the tasks section after a short delay to allow state update
+                  setTimeout(() => {
+                    document
+                      .getElementById("selected-day-tasks")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }, 100)
+                }}
+              >
+                <div
+                  className={cn(
+                    "text-sm font-medium mb-1 font-mono",
+                    !calendarDay.isCurrentMonth && "text-muted-foreground",
+                  )}
+                >
+                  {calendarDay.day}
+                </div>
+                <div className="space-y-1">
+                  {dayTodos.slice(0, 2).map((todo) => (
                     <div
+                      key={todo.id}
                       className={cn(
-                        "w-2 h-2 rounded-full",
+                        "w-full h-1 rounded-full",
                         todo.completed ? "bg-[hsl(var(--ds-red-700))]" : "bg-[hsl(var(--ds-red-700))]",
                       )}
                     />
-                    <span className={cn("text-xs truncate", todo.completed && "line-through text-muted-foreground")}>
-                      {todo.text}
-                    </span>
+                  ))}
+                  {dayTodos.length > 2 && (
+                    <div className="text-xs text-muted-foreground font-mono">+{dayTodos.length - 2}</div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-8 space-y-4" id="selected-day-tasks">
+          <h3 className="text-xl font-medium">Tasks for {formatDate(selectedDate)}</h3>
+          <div className="space-y-2">
+            {getFilteredTodos(getTodosForDate(selectedDate)).map((todo) => (
+              <div key={todo.id} className="flex items-center gap-3 py-2">
+                <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
+                <span
+                  className={cn("flex-1 text-base font-medium", todo.completed && "line-through text-muted-foreground")}
+                >
+                  {todo.text}
+                </span>
+                {todo.tags.length > 0 && (
+                  <div className="flex gap-1">
+                    {todo.tags.map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-xs font-mono">
+                        {tag}
+                      </Badge>
+                    ))}
                   </div>
-                ))}
-                {dayTodos.length > 3 && (
-                  <div className="text-xs text-muted-foreground font-mono">+{dayTodos.length - 3} more</div>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteTodo(todo.id)}
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
+            ))}
 
-  const renderMonthView = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-light font-mono">
-          {new Date(selectedDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-        </h2>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <FilterButton />
-          <AddButton />
+            {getFilteredTodos(getTodosForDate(selectedDate)).length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No tasks for this day</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {showAddForm && <AddEventForm onSubmit={addTodo} onCancel={() => setShowAddForm(false)} />}
-
-      {showFilter && (
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Filter by tags or text..."
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              className="flex-1 font-mono"
-            />
-          </div>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-7 gap-2">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground font-mono">
-            {day}
-          </div>
-        ))}
-        {getCurrentMonthDates().map((date) => {
-          const dayTodos = getTodosForDate(date)
-          const day = new Date(date).getDate()
-          const isToday = date === new Date().toISOString().split("T")[0]
-
-          return (
-            <div
-              key={date}
-              className={cn("p-2 min-h-[80px] cursor-pointer transition-colors", isToday && "ring-2 ring-primary")}
-              onClick={() => navigateToDate(date)}
-            >
-              <div className="text-sm font-medium mb-1 font-mono">{day}</div>
-              <div className="space-y-1">
-                {dayTodos.slice(0, 2).map((todo) => (
-                  <div
-                    key={todo.id}
-                    className={cn(
-                      "w-full h-1 rounded-full",
-                      todo.completed ? "bg-[hsl(var(--ds-red-700))]" : "bg-[hsl(var(--ds-red-700))]",
-                    )}
-                  />
-                ))}
-                {dayTodos.length > 2 && (
-                  <div className="text-xs text-muted-foreground font-mono">+{dayTodos.length - 2}</div>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-
-  const renderYearView = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-light font-mono">{new Date(selectedDate).getFullYear()}</h2>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <FilterButton />
-          <AddButton />
-        </div>
-      </div>
-
-      {showAddForm && <AddEventForm onSubmit={addTodo} onCancel={() => setShowAddForm(false)} />}
-
-      {showFilter && (
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Filter by tags or text..."
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              className="flex-1 font-mono"
-            />
-          </div>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {Array.from({ length: 12 }, (_, monthIndex) => {
-          const currentYear = new Date(selectedDate).getFullYear()
-          const month = new Date(currentYear, monthIndex, 1).toLocaleDateString("en-US", { month: "long" })
-          const monthTodos = todos.filter((todo) => {
-            const todoDate = new Date(todo.date)
-            return todoDate.getMonth() === monthIndex && todoDate.getFullYear() === currentYear
-          })
-
-          return (
-            <div
-              key={monthIndex}
-              className="p-4 cursor-pointer transition-colors"
-              onClick={() => {
-                // Create date string directly to avoid timezone issues
-                const dateString = `${currentYear}-${String(monthIndex + 1).padStart(2, "0")}-01`
-                setSelectedDate(dateString)
-                setCurrentView("Month")
-              }}
-            >
-              <h3 className="font-medium mb-3">{month}</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-muted-foreground font-mono">
-                  <span>Total: {monthTodos.length}</span>
-                  <span>Done: {monthTodos.filter((t) => t.completed).length}</span>
-                </div>
-                <div className="w-full bg-secondary rounded-full h-2">
-                  <div
-                    className="bg-[hsl(var(--ds-red-700))] h-2 rounded-full transition-all"
-                    style={{
-                      width: `${monthTodos.length ? (monthTodos.filter((t) => t.completed).length / monthTodos.length) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
+    )
+  }
 
   const renderOverviewView = () => {
     const today = new Date().toISOString().split("T")[0]
@@ -831,7 +865,7 @@ export default function TodoCalendarApp() {
       date.setDate(date.getDate() + i)
       next365Days.push(date.toISOString().split("T")[0])
     }
-    const next365DaysTodos = getFilteredTodos(todos.filter((todo) => next365Days.includes(todo.date)))
+    const next365DaysTodos = getFilteredTodos(todos.filter((todo) => next365Days.includes(todo.date) && todo.pinned))
 
     const formatEventDate = (dateString: string) => {
       const date = new Date(dateString)
@@ -866,15 +900,6 @@ export default function TodoCalendarApp() {
                 <span className={cn("text-base font-medium", todo.completed && "line-through text-muted-foreground")}>
                   {todo.text}
                 </span>
-                {todo.tags.length > 0 && (
-                  <div className="flex gap-1">
-                    {todo.tags.slice(0, 1).map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs h-4 px-1 font-mono">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
               </div>
               {showDates && (
                 <div className="text-xs text-muted-foreground ml-8 font-mono">{formatEventDate(todo.date)}</div>
@@ -902,7 +927,14 @@ export default function TodoCalendarApp() {
             </div>
           </div>
 
-          {showAddForm && <AddEventForm onSubmit={addTodo} onCancel={() => setShowAddForm(false)} />}
+          {showAddForm && (
+            <AddEventForm
+              onSubmit={addTodo}
+              onCancel={() => setShowAddForm(false)}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+            />
+          )}
 
           {showFilter && (
             <div className="p-4">
@@ -924,7 +956,7 @@ export default function TodoCalendarApp() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <h3 className="text-lg font-medium text-foreground">Today</h3>
-              <span className="text-2xl font-light text-primary font-mono">{todayTodos.length}</span>
+              <span className="text-2xl font-light text-red-500 font-mono">{todayTodos.length}</span>
             </div>
             <EventList todos={todayTodos} showAll showDates={false} />
           </div>
@@ -933,7 +965,7 @@ export default function TodoCalendarApp() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <h3 className="text-lg font-medium text-foreground">Next 7 Days</h3>
-              <span className="text-2xl font-light text-primary font-mono">{next7DaysTodos.length}</span>
+              <span className="text-2xl font-light text-red-500 font-mono">{next7DaysTodos.length}</span>
             </div>
             <EventList todos={next7DaysTodos} showAll />
           </div>
@@ -942,7 +974,7 @@ export default function TodoCalendarApp() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <h3 className="text-lg font-medium text-foreground">Next 28 Days</h3>
-              <span className="text-2xl font-light text-primary font-mono">{next28DaysTodos.length}</span>
+              <span className="text-2xl font-light text-red-500 font-mono">{next28DaysTodos.length}</span>
             </div>
             <EventList todos={next28DaysTodos} showAll />
           </div>
@@ -951,7 +983,7 @@ export default function TodoCalendarApp() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <h3 className="text-lg font-medium text-foreground">Next 365 Days</h3>
-              <span className="text-2xl font-light text-primary font-mono">{next365DaysTodos.length}</span>
+              <span className="text-2xl font-light text-red-500 font-mono">{next365DaysTodos.length}</span>
             </div>
             <EventList todos={next365DaysTodos} showAll={showMore365} onShowMore={() => setShowMore365(true)} />
           </div>
@@ -962,20 +994,44 @@ export default function TodoCalendarApp() {
 
   const renderCurrentView = () => {
     switch (currentView) {
-      case "Days":
-        return renderDaysView()
-      case "Week":
-        return renderWeekView()
-      case "Month":
-        return renderMonthView()
-      case "Year":
-        return renderYearView()
       case "Overview":
         return renderOverviewView()
+      case "Calendar":
+        return renderCalendarView()
       default:
-        return renderDaysView()
+        return renderOverviewView()
     }
   }
+
+  // Auto-move uncompleted tasks from previous days
+  useEffect(() => {
+    if (todos.length > 0) {
+      autoMoveUncompletedTasks()
+    }
+  }, [todos.length]) // Only run when todos are first loaded
+
+  // Check for auto-move on focus/visibility change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && todos.length > 0) {
+        autoMoveUncompletedTasks()
+      }
+    }
+
+    const handleFocus = () => {
+      if (todos.length > 0) {
+        autoMoveUncompletedTasks()
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    window.addEventListener("focus", handleFocus)
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("focus", handleFocus)
+    }
+  }, [todos])
 
   return (
     <div className="min-h-screen bg-background">
@@ -985,8 +1041,11 @@ export default function TodoCalendarApp() {
             <div className="flex items-center gap-3">
               <div
                 onClick={() => {
-                  setSelectedDate(new Date().toISOString().split("T")[0])
-                  setCurrentView("Days")
+                  const today = new Date()
+                  setSelectedDate(today.toISOString().split("T")[0])
+                  setViewYear(today.getFullYear())
+                  setViewMonth(today.getMonth())
+                  setCurrentView("Calendar")
                 }}
                 className="cursor-pointer hover:bg-accent/50 transition-colors p-2 rounded-md"
               >
