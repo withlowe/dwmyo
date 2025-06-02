@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Calendar, Trash2, Filter, X, Download, Upload } from "lucide-react"
+import { Plus, Calendar, Trash2, Filter, X, Download, Upload, Edit } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PWAInstall } from "@/components/pwa-install"
 
@@ -228,21 +228,37 @@ const saveTodosToStorage = (todos: Todo[]) => {
   }
 }
 
-// Separate component for the add form to prevent focus issues
+// Separate component for the add/edit form to prevent focus issues
 function AddEventForm({
   onSubmit,
   onCancel,
   selectedDate,
   setSelectedDate,
+  editingTodo,
 }: {
-  onSubmit: (text: string, tags: string[], pinTask: boolean, date: string) => void
+  onSubmit: (text: string, tags: string[], pinTask: boolean, date: string, editingId?: string) => void
   onCancel: () => void
   selectedDate: string
   setSelectedDate: (date: string) => void
+  editingTodo?: Todo | null
 }) {
-  const [text, setText] = useState("")
-  const [tags, setTags] = useState("")
-  const [pinTask, setPinTask] = useState(false)
+  const [text, setText] = useState(editingTodo?.text || "")
+  const [tags, setTags] = useState(editingTodo?.tags.join(", ") || "")
+  const [pinTask, setPinTask] = useState(editingTodo?.pinned || false)
+
+  // Update form when editingTodo changes
+  useEffect(() => {
+    if (editingTodo) {
+      setText(editingTodo.text)
+      setTags(editingTodo.tags.join(", "))
+      setPinTask(editingTodo.pinned)
+      setSelectedDate(editingTodo.date)
+    } else {
+      setText("")
+      setTags("")
+      setPinTask(false)
+    }
+  }, [editingTodo, setSelectedDate])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -251,7 +267,7 @@ function AddEventForm({
         .split(",")
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0)
-      onSubmit(text, tagList, pinTask, selectedDate)
+      onSubmit(text, tagList, pinTask, selectedDate, editingTodo?.id)
       setText("")
       setTags("")
       setPinTask(false)
@@ -261,7 +277,7 @@ function AddEventForm({
   return (
     <Card className="p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium">Add New Event</h3>
+        <h3 className="font-medium">{editingTodo ? "Edit Event" : "Add New Event"}</h3>
         <Button variant="ghost" size="sm" onClick={onCancel}>
           <X className="h-4 w-4" />
         </Button>
@@ -309,6 +325,7 @@ export default function TodoCalendarApp() {
   const [showMore365, setShowMore365] = useState(false)
   const [showFilter, setShowFilter] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null)
   const navRef = useRef<HTMLDivElement>(null)
   const [viewYear, setViewYear] = useState(new Date().getFullYear())
   const [viewMonth, setViewMonth] = useState(new Date().getMonth())
@@ -372,20 +389,44 @@ export default function TodoCalendarApp() {
     return () => document.removeEventListener("touchend", preventZoom)
   }, [])
 
-  const addTodo = (text: string, tags: string[], pinTask: boolean, date: string) => {
+  const addTodo = (text: string, tags: string[], pinTask: boolean, date: string, editingId?: string) => {
     if (text.trim()) {
-      const todo: Todo = {
-        id: Date.now().toString(),
-        text: text,
-        completed: false,
-        date: date,
-        category: "personal",
-        tags: tags,
-        pinned: pinTask,
+      if (editingId) {
+        // Edit existing todo
+        setTodos(
+          todos.map((todo) =>
+            todo.id === editingId
+              ? {
+                  ...todo,
+                  text: text,
+                  date: date,
+                  tags: tags,
+                  pinned: pinTask,
+                }
+              : todo,
+          ),
+        )
+        setEditingTodo(null)
+      } else {
+        // Add new todo
+        const todo: Todo = {
+          id: Date.now().toString(),
+          text: text,
+          completed: false,
+          date: date,
+          category: "personal",
+          tags: tags,
+          pinned: pinTask,
+        }
+        setTodos([...todos, todo])
       }
-      setTodos([...todos, todo])
       setShowAddForm(false)
     }
+  }
+
+  const editTodo = (todo: Todo) => {
+    setEditingTodo(todo)
+    setShowAddForm(true)
   }
 
   const navigateToDate = (date: string) => {
@@ -535,7 +576,14 @@ export default function TodoCalendarApp() {
   )
 
   const AddButton = () => (
-    <Button variant="outline" size="sm" onClick={() => setShowAddForm(!showAddForm)}>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => {
+        setEditingTodo(null)
+        setShowAddForm(!showAddForm)
+      }}
+    >
       <Plus className="h-4 w-4 mr-2" />
       Add Event
     </Button>
@@ -718,9 +766,13 @@ export default function TodoCalendarApp() {
         {showAddForm && (
           <AddEventForm
             onSubmit={addTodo}
-            onCancel={() => setShowAddForm(false)}
+            onCancel={() => {
+              setShowAddForm(false)
+              setEditingTodo(null)
+            }}
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
+            editingTodo={editingTodo}
           />
         )}
 
@@ -797,30 +849,47 @@ export default function TodoCalendarApp() {
           <h3 className="text-xl font-medium">Tasks for {formatDate(selectedDate)}</h3>
           <div className="space-y-2">
             {getFilteredTodos(getTodosForDate(selectedDate)).map((todo) => (
-              <div key={todo.id} className="flex items-center gap-3 py-2">
-                <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
-                <span
-                  className={cn("flex-1 text-base font-medium", todo.completed && "line-through text-muted-foreground")}
-                >
-                  {todo.text}
-                </span>
-                {todo.tags.length > 0 && (
+              <div key={todo.id} className="flex flex-col sm:flex-row sm:items-center gap-3 py-2">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
+                  <span
+                    className={cn(
+                      "flex-1 text-base font-medium break-words",
+                      todo.completed && "line-through text-muted-foreground",
+                    )}
+                  >
+                    {todo.text}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  {todo.tags.length > 0 && (
+                    <div className="flex gap-1 flex-wrap">
+                      {todo.tags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs font-mono">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex gap-1">
-                    {todo.tags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs font-mono">
-                        {tag}
-                      </Badge>
-                    ))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => editTodo(todo)}
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteTodo(todo.id)}
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteTodo(todo.id)}
-                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                </div>
               </div>
             ))}
 
@@ -930,9 +999,13 @@ export default function TodoCalendarApp() {
           {showAddForm && (
             <AddEventForm
               onSubmit={addTodo}
-              onCancel={() => setShowAddForm(false)}
+              onCancel={() => {
+                setShowAddForm(false)
+                setEditingTodo(null)
+              }}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
+              editingTodo={editingTodo}
             />
           )}
 
