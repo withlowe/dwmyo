@@ -810,7 +810,7 @@ export default function TodoCalendarApp() {
             </div>
           ))}
           {calendarDays.map((calendarDay, index) => {
-            const dayTodos = getTodosForDate(calendarDay.date)
+            const dayTodos = getFilteredTodos(getTodosForDate(calendarDay.date))
 
             return (
               <div
@@ -1163,7 +1163,7 @@ export default function TodoCalendarApp() {
       <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 text-xs">
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleExport}>
               <Download className="h-3 w-3 mr-1" />
               Export .ics
             </Button>
