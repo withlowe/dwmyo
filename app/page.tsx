@@ -275,39 +275,49 @@ function AddEventForm({
   }
 
   return (
-    <Card className="p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium">{editingTodo ? "Edit Event" : "Add New Event"}</h3>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
-          <X className="h-4 w-4" />
+    <Card className="p-4 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-medium text-sm">{editingTodo ? "Edit Event" : "Add New Event"}</h3>
+        <Button variant="ghost" size="sm" onClick={onCancel} className="h-7 w-7 p-0">
+          <X className="h-3 w-3" />
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center gap-2">
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <Input
             placeholder="Add a new task..."
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="flex-1"
+            className="flex-1 text-sm h-9"
             autoFocus
           />
-          <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-40" />
-          <Button type="submit" size="sm">
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-full sm:w-36 text-sm h-9"
+          />
+          <Button type="submit" size="sm" className="h-9 px-3">
             <Plus className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <Input
             placeholder="Tags (comma separated)..."
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            className="flex-1"
+            className="flex-1 text-sm h-9"
           />
-          <div className="flex items-center gap-2">
-            <Checkbox id="pin-task" checked={pinTask} onCheckedChange={(checked) => setPinTask(!!checked)} />
-            <label htmlFor="pin-task" className="text-sm text-muted-foreground cursor-pointer">
+          <div className="flex items-center gap-2 px-1">
+            <Checkbox
+              id="pin-task"
+              checked={pinTask}
+              onCheckedChange={(checked) => setPinTask(!!checked)}
+              className="h-4 w-4"
+            />
+            <label htmlFor="pin-task" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
               Pin
             </label>
           </div>
@@ -569,8 +579,8 @@ export default function TodoCalendarApp() {
   }
 
   const FilterButton = () => (
-    <Button variant="outline" size="sm" onClick={() => setShowFilter(!showFilter)}>
-      <Filter className="h-4 w-4 mr-2" />
+    <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setShowFilter(!showFilter)}>
+      <Filter className="h-3 w-3 mr-1" />
       Filter
     </Button>
   )
@@ -579,12 +589,13 @@ export default function TodoCalendarApp() {
     <Button
       variant="outline"
       size="sm"
+      className="h-8 text-xs"
       onClick={() => {
         setEditingTodo(null)
         setShowAddForm(!showAddForm)
       }}
     >
-      <Plus className="h-4 w-4 mr-2" />
+      <Plus className="h-3 w-3 mr-1" />
       Add Event
     </Button>
   )
@@ -726,10 +737,11 @@ export default function TodoCalendarApp() {
             <h2 className="text-2xl font-light font-mono">
               {monthNames[viewMonth]} {viewYear}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               <Button
                 variant="outline"
                 size="sm"
+                className="h-7 w-7 p-0 text-xs"
                 onClick={() => {
                   if (viewMonth === 0) {
                     setViewMonth(11)
@@ -744,6 +756,7 @@ export default function TodoCalendarApp() {
               <Button
                 variant="outline"
                 size="sm"
+                className="h-7 w-7 p-0 text-xs"
                 onClick={() => {
                   if (viewMonth === 11) {
                     setViewMonth(0)
@@ -777,22 +790,22 @@ export default function TodoCalendarApp() {
         )}
 
         {showFilter && (
-          <Card className="p-4">
+          <Card className="p-3">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Filter className="h-3 w-3 text-muted-foreground" />
               <Input
-                placeholder="Filter by tags or text..."
+                placeholder="Filter by tags or text"
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
-                className="flex-1 font-mono"
+                className="flex-1 font-mono text-sm h-8"
               />
             </div>
           </Card>
         )}
 
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-            <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground font-mono">
+            <div key={day} className="p-1 text-center text-xs font-medium text-muted-foreground font-mono">
               {day}
             </div>
           ))}
@@ -803,7 +816,7 @@ export default function TodoCalendarApp() {
               <div
                 key={index}
                 className={cn(
-                  "p-2 min-h-[80px] cursor-pointer transition-all duration-200 border rounded-md",
+                  "p-1 min-h-[70px] cursor-pointer transition-all duration-200 border rounded-md",
                   calendarDay.isCurrentMonth ? "bg-background" : "bg-muted/30",
                   calendarDay.isToday && "ring-2 ring-primary",
                   calendarDay.date === selectedDate && "bg-accent/50 ring-2 ring-accent shadow-md",
@@ -821,7 +834,7 @@ export default function TodoCalendarApp() {
               >
                 <div
                   className={cn(
-                    "text-sm font-medium mb-1 font-mono",
+                    "text-xs font-medium mb-1 font-mono",
                     !calendarDay.isCurrentMonth && "text-muted-foreground",
                   )}
                 >
@@ -838,7 +851,7 @@ export default function TodoCalendarApp() {
                     />
                   ))}
                   {dayTodos.length > 2 && (
-                    <div className="text-xs text-muted-foreground font-mono">+{dayTodos.length - 2}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono">+{dayTodos.length - 2}</div>
                   )}
                 </div>
               </div>
@@ -849,23 +862,23 @@ export default function TodoCalendarApp() {
           <h3 className="text-xl font-medium">Tasks for {formatDate(selectedDate)}</h3>
           <div className="space-y-2">
             {getFilteredTodos(getTodosForDate(selectedDate)).map((todo) => (
-              <div key={todo.id} className="flex flex-col sm:flex-row sm:items-center gap-3 py-2">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
+              <div key={todo.id} className="flex flex-col sm:flex-row sm:items-center gap-2 py-1">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} className="h-4 w-4" />
                   <span
                     className={cn(
-                      "flex-1 text-base font-medium break-words",
+                      "flex-1 text-sm font-medium break-words",
                       todo.completed && "line-through text-muted-foreground",
                     )}
                   >
                     {todo.text}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-1 flex-wrap sm:flex-nowrap">
                   {todo.tags.length > 0 && (
                     <div className="flex gap-1 flex-wrap">
                       {todo.tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs font-mono">
+                        <Badge key={tag} variant="outline" className="text-[10px] font-mono px-1 py-0">
                           {tag}
                         </Badge>
                       ))}
@@ -876,17 +889,17 @@ export default function TodoCalendarApp() {
                       variant="ghost"
                       size="sm"
                       onClick={() => editTodo(todo)}
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteTodo(todo.id)}
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
@@ -954,33 +967,57 @@ export default function TodoCalendarApp() {
       const displayTodos = showAll ? todos : todos.slice(0, 5)
 
       if (todos.length === 0) {
-        return <div className="text-sm text-muted-foreground italic py-4">No events to show</div>
+        return <div className="text-xs text-muted-foreground italic py-3">No events to show</div>
       }
 
       return (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {displayTodos.map((todo) => (
             <div key={todo.id} className="space-y-1">
               <div
-                className="flex items-center gap-2 cursor-pointer p-2 transition-colors"
+                className="flex items-center gap-2 cursor-pointer p-1 transition-colors"
                 onClick={() => navigateToDate(todo.date)}
               >
-                <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} className="h-4 w-4" />
-                <span className={cn("text-base font-medium", todo.completed && "line-through text-muted-foreground")}>
+                <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} className="h-3 w-3" />
+                <span className={cn("text-sm font-medium", todo.completed && "line-through text-muted-foreground")}>
                   {todo.text}
                 </span>
               </div>
               {showDates && (
-                <div className="text-xs text-muted-foreground ml-8 font-mono">{formatEventDate(todo.date)}</div>
+                <div className="text-[10px] text-muted-foreground ml-6 font-mono">{formatEventDate(todo.date)}</div>
               )}
             </div>
           ))}
 
           {!showAll && todos.length > 5 && onShowMore && (
-            <button onClick={onShowMore} className="text-sm text-primary hover:underline flex items-center gap-1 ml-8">
+            <button onClick={onShowMore} className="text-xs text-primary hover:underline flex items-center gap-1 ml-6">
               <span>Show more</span>
             </button>
           )}
+        </div>
+      )
+    }
+
+    const Section = ({
+      title,
+      todos,
+      showAll = false,
+      onShowMore,
+    }: {
+      title: string
+      todos: Todo[]
+      showAll?: boolean
+      onShowMore?: () => void
+    }) => {
+      const count = todos.length
+
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-medium text-foreground">{title}</h3>
+            <span className="text-xl font-light text-red-500 font-mono">{count}</span>
+          </div>
+          <EventList todos={todos} showAll={showAll} onShowMore={onShowMore} showDates={false} />
         </div>
       )
     }
@@ -1010,56 +1047,30 @@ export default function TodoCalendarApp() {
           )}
 
           {showFilter && (
-            <div className="p-4">
+            <Card className="p-3">
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Filter className="h-3 w-3 text-muted-foreground" />
                 <Input
-                  placeholder="Filter by tags or text..."
+                  placeholder="Filter by tags or text"
                   value={tagFilter}
                   onChange={(e) => setTagFilter(e.target.value)}
-                  className="flex-1 font-mono"
+                  className="flex-1 font-mono text-sm h-8"
                 />
               </div>
-            </div>
+            </Card>
           )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Today */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <h3 className="text-lg font-medium text-foreground">Today</h3>
-              <span className="text-2xl font-light text-red-500 font-mono">{todayTodos.length}</span>
-            </div>
-            <EventList todos={todayTodos} showAll showDates={false} />
-          </div>
-
-          {/* Next 7 Days */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <h3 className="text-lg font-medium text-foreground">Next 7 Days</h3>
-              <span className="text-2xl font-light text-red-500 font-mono">{next7DaysTodos.length}</span>
-            </div>
-            <EventList todos={next7DaysTodos} showAll />
-          </div>
-
-          {/* Next 28 Days */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <h3 className="text-lg font-medium text-foreground">Next 28 Days</h3>
-              <span className="text-2xl font-light text-red-500 font-mono">{next28DaysTodos.length}</span>
-            </div>
-            <EventList todos={next28DaysTodos} showAll />
-          </div>
-
-          {/* Next 365 Days */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <h3 className="text-lg font-medium text-foreground">Next 365 Days</h3>
-              <span className="text-2xl font-light text-red-500 font-mono">{next365DaysTodos.length}</span>
-            </div>
-            <EventList todos={next365DaysTodos} showAll={showMore365} onShowMore={() => setShowMore365(true)} />
-          </div>
+          <Section title="Today" todos={todayTodos} showAll />
+          <Section title="Next 7 Days" todos={next7DaysTodos} showAll />
+          <Section title="Next 28 Days" todos={next28DaysTodos} showAll />
+          <Section
+            title="Next 365 Days"
+            todos={next365DaysTodos}
+            showAll={showMore365}
+            onShowMore={() => setShowMore365(true)}
+          />
         </div>
       </div>
     )
@@ -1109,7 +1120,7 @@ export default function TodoCalendarApp() {
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
@@ -1146,14 +1157,14 @@ export default function TodoCalendarApp() {
         </div>
       </div>
 
-      <main className="container mx-auto px-6 py-8">{renderCurrentView()}</main>
+      <main className="container mx-auto px-4 py-6">{renderCurrentView()}</main>
 
       {/* Import/Export buttons at bottom */}
       <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="h-8 text-xs">
+              <Download className="h-3 w-3 mr-1" />
               Export .ics
             </Button>
             <div className="relative">
@@ -1164,9 +1175,9 @@ export default function TodoCalendarApp() {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 id="ics-import"
               />
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="h-8 text-xs">
                 <label htmlFor="ics-import" className="cursor-pointer flex items-center justify-center">
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-3 w-3 mr-1" />
                   Import .ics
                 </label>
               </Button>
